@@ -21,7 +21,16 @@
  * factor has 2 rules, if it is a literal or if it is an expression
  * F -> v
  * F -> (E)
- */
+ * 
+ * when you have c(aa)|b, on the branch state, if character before is a ")" (bracket counter >0) ,  
+ *  then go to state before closing bracket and put its n1 & n2 to state of BR
+ * 
+ * when you have BR (* or |), on the branch state, if no ")" before, 
+ * then go to state -2, on make its n1*n2 to the state of BR
+ * 
+ * when you have branch state like a(a|b), 1st a has to point to |
+ * 
+ */ 
 
 public class REmake {
 
