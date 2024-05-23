@@ -1,6 +1,3 @@
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.util.ArrayList;
 
 // need a cfg to tell if regexp is wellformed
 // term(anything that can be involved in an operation):
@@ -33,7 +30,7 @@ public class REmake {
     public static int state = 0; // state
     // public int next1 = 0;
     // public int next2 = 0;
-    public static String[] charStringArray;
+    public static String[] typeStringArray;
     public static int[] next1Array;
     public static int[] next2Array;
 
@@ -44,29 +41,41 @@ public class REmake {
 
         String regexp = args[0];
         // insert each char of string into array
-        charArray = new Character[regexp.length() + 1];
+        charArray = new Character[regexp.length() + 2];
+        // placeholder for start state
+        charArray[0] = '0';
         for (int i = 0; i < regexp.length(); i++) {
-            charArray[i] = regexp.charAt(i);
+            charArray[i + 1] = regexp.charAt(i);
             // System.out.println(charArray[i] + " at index: " + i );
         }
         charArray[charArray.length - 1] = '\0';
 
-        charStringArray = new String[charArray.length];
+        for (char a : charArray) {
+            System.out.println(a);
+        }
+
+        typeStringArray = new String[charArray.length];
         next1Array = new int[charArray.length];
         next2Array = new int[charArray.length];
 
         parse();
-        System.out.println("wellformed regex!");
+        // System.out.println("wellformed regex!");
+        for (int i = 0; i < typeStringArray.length; i++) {
+            System.out.println(i + "," + typeStringArray[i] + "," + next1Array[i] + "," + next2Array[i]);
+        }
 
     }
 
     public static void parse() {
+        set_state(state, "BR", j + 1, j + 1);
+        state++;
+        j++;
 
         int result = expression();
         // if exited out of expression then error as char is not an expression
         // check if array at index j is valid(not at the end)
         if (charArray[j] != '\0') {
-            System.out.println(69);
+            System.out.println(68);
             error();
         }
         set_state(state, "end", 0, 0);
@@ -97,30 +106,37 @@ public class REmake {
     public static int term() {
         // calls factor first as 1st char cannot be special char
         int result = factor();
-        int f = state -1;
-        int t1 = result;
-        int t2;
+        //final state of first literal before * or | (final state of result)
+        int finalState = state - 1;
         // System.out.println("j: " + j + " char: " + charArray[j]);
         if ((charArray[j] != null) && charArray[j].compareTo('*') == 0) {
+            // n1 is the previous state and n2 is the next state
             set_state(state, "BR", result, state + 1);
             j++;
-            result = state;
             state++;
+            return state - 1;
         }
 
-        // if ((charArray[j] != null) && charArray[j].compareTo('|') == 0) {
-        //     int br = state;
-        //     state++;
-        //     int result2 = factor();
-        //     set_state(br, "BR", result, result2);
-        //     result = br;
-        //     j++;
-        //     if (next1Array[f1] == next2Array[f1]) {
-        //         set_state(f1, ch[f1], state, state);
-        //     } else {
-        //         set_state(f1, ch[f1], next1[f1], state);
-        //     }}
-        
+        if ((charArray[j] != null) && charArray[j].compareTo('|') == 0) {
+            //keep track of state(number of slot to build |), is the branching state
+            int br = state;
+            state++;
+            j++;
+            //build the state after | first and save to result
+            int result2 = factor(); //from hereeeeeeeeeeeeeeeeeeeeeeee
+            //n1 is the previous state before | and and n2 is the state after the |
+            set_state(br, "BR", result, result2);
+            result = br;
+            //check if final state of previous state is same for n1 & n2
+            //means non branching state
+            if (next1Array[finalState] == next2Array[finalState]) {
+                set_state(finalState, typeStringArray[finalState], state, state);
+            } else {
+                //it is a branching state
+                set_state(finalState, typeStringArray[finalState], next1Array[finalState], state);
+            }
+        }
+
         // add later
         // for '.' call factor and match any literal
         // for '?'
@@ -137,17 +153,16 @@ public class REmake {
             // System.out.println("j: " + j + " char: " + charArray[j]);
             // System.out.println("char: " + charArray[j] + " at index: " + j + " is a
             // vocab");
-            if (charArray[j + 2].compareTo('*') == 0) {
-                set_state(state, charArray[j].toString(), state + 2, state + 2);
-            } else {
-                set_state(state, charArray[j].toString(), state + 1, state + 1);
-            }
+
+            set_state(state, charArray[j].toString(), state + 1, state + 1);
             j++;
             result = state;
             state++;
             // System.out.println("j: " +j);
         } else {
             if (charArray[j].compareTo('(') == 0) {
+                // implement look ahead to check if closing parenthesis is follwoed by special
+                // character
                 j++;
                 result = expression();
 
@@ -155,12 +170,12 @@ public class REmake {
                     j++;
                 } else {
                     // malformed regex
-                    System.out.println(149);
+                    System.out.println(174);
                     error();
                 }
             } else {
                 // malformed regex
-                System.out.println(164);
+                System.out.println(180);
                 error();
             }
         }
@@ -182,15 +197,17 @@ public class REmake {
     // build a state(output) once regex is determined to be wellformed
     public static int set_state(int i, String type, int n1, int n2) {
         // System.out.println(type);
-        charStringArray[i] = type;
+        typeStringArray[i] = type;
         next1Array[i] = n1;
         next2Array[i] = n2;
-        System.out.println(i + "," + type + "," + n1 + "," + n2);
         return i;
     }
 
     public static void error() {
-        System.err.println("malformed regex! Type in a correct regex");
+        System.err.println("malformed regex! Existing entries:");
+        for (int i = 0; i < typeStringArray.length; i++) {
+            System.out.println(i + "," + typeStringArray[i] + "," + next1Array[i] + "," + next2Array[i]);
+        }
         System.exit(1);
     }
 }
