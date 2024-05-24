@@ -1,37 +1,4 @@
 
-// need a cfg to tell if regexp is wellformed
-// term(anything that can be involved in an operation):
-// match a literal or a closure, or disjuction with a factor
-// top-down left to right recursive descent parser
-/**
- * start with an E, followed by a queue of all possbile rewrites
- */
-
-// expression:anything in a bracket
-// literal(v: actual chars)
-// closure:
-// disjunction:
-// concatenation:
-/**
- * E -> T
- * E -> TE
- * T -> F
- * T -> F*
- * T -> F | F
- * factor has 2 rules, if it is a literal or if it is an expression
- * F -> v
- * F -> (E)
- * 
- * when you have c(aa)|b, on the branch state, if character before is a ")" (bracket counter >0) ,  
- *  then go to state before closing bracket and put its n1 & n2 to state of BR
- * 
- * when you have BR (* or |), on the branch state, if no ")" before, 
- * then go to state -2, on make its n1*n2 to the state of BR
- * 
- * when you have branch state like a(a|b), 1st a has to point to |
- * 
- */ 
-
 public class REmake {
 
     public static Character[] charArray;
@@ -69,6 +36,10 @@ public class REmake {
 
         parse();
         // System.out.println("wellformed regex!");
+     
+        System.out.println("state: " + state);
+        updateStates(1);
+
         for (int i = 0; i < typeStringArray.length; i++) {
             System.out.println(i + "," + typeStringArray[i] + "," + next1Array[i] + "," + next2Array[i]);
         }
@@ -115,7 +86,7 @@ public class REmake {
     public static int term() {
         // calls factor first as 1st char cannot be special char
         int result = factor();
-        //final state of first literal before * or | (final state of result)
+        // final state of first literal before * or | (final state of result)
         int finalState = state - 1;
         // System.out.println("j: " + j + " char: " + charArray[j]);
         if ((charArray[j] != null) && charArray[j].compareTo('*') == 0) {
@@ -127,21 +98,21 @@ public class REmake {
         }
 
         if ((charArray[j] != null) && charArray[j].compareTo('|') == 0) {
-            //keep track of state(number of slot to build |), is the branching state
+            // keep track of state(number of slot to build |), is the branching state
             int br = state;
             state++;
             j++;
-            //build the state after | first and save to result
-            int result2 = factor(); //from hereeeeeeeeeeeeeeeeeeeeeeee
-            //n1 is the previous state before | and and n2 is the state after the |
+            // build the state after | first and save to result
+            int result2 = factor(); // from hereeeeeeeeeeeeeeeeeeeeeeee
+            // n1 is the previous state before | and and n2 is the state after the |
             set_state(br, "BR", result, result2);
             result = br;
-            //check if final state of previous state is same for n1 & n2
-            //means non branching state
+            // check if final state of previous state is same for n1 & n2
+            // means non branching state
             if (next1Array[finalState] == next2Array[finalState]) {
                 set_state(finalState, typeStringArray[finalState], state, state);
             } else {
-                //it is a branching state
+                // it is a branching state
                 set_state(finalState, typeStringArray[finalState], next1Array[finalState], state);
             }
         }
@@ -219,4 +190,86 @@ public class REmake {
         }
         System.exit(1);
     }
-}
+
+    /*
+     * when you have c(aa)|b, on the branch state, if character before is a ")"
+     * (bracket counter >0) ,
+     * then go to state before closing bracket and put its n1 & n2 to state of BR
+     * 
+     * when you have BR (* or |), on the branch state, if no ")" before,
+     * then go to state -2, on make its n1*n2 to the state of BR
+     * 
+     * when you have branch state like a(a|b), 1st a has to point to |
+     * 
+     * recursively call this at the main to update states 
+     * save states?
+     * should only recursively csll when brackets
+     */
+    public static int updateStates(int index){
+        int savedState = index-1;
+        for (int i = index;i < charArray.length; i++){
+            //if | and diff is not more than 2
+            if(charArray[i].compareTo('|') == 0 && (i - savedState ==2)){
+                set_state(savedState, typeStringArray[savedState], i, i);
+                savedState = state ;
+                state++; 
+            }
+
+            //when this is called, state points to character after '('
+            if(charArray[i].compareTo('(') == 0){
+                int result = updateStates(i);
+            }
+            else if(charArray[i].compareTo(')') == 0){
+                return i;
+            } 
+
+            if(isVocab(charArray[i])){
+                state++;
+            }
+
+            
+        }
+
+    //     int openingBracketCount = 0;
+    //     int closingBracketCount = 0;
+    //     state = state--; //as we are starting from 1 off the end state
+    //     Stack <Integer> savedStates = new Stack<>();
+
+    //     //assign i to index before null state(end state)
+    //     for(int i = charArray.length -2; i >= 0;i--){
+    //         System.out.println("i: " + i);
+    //         //check if closing bracket
+    //         if(charArray[i].compareTo(')') == 0 ){
+    //             closingBracketCount++;
+    //             //save the state before this
+    //             savedStates.add(state);
+    //             continue;
+    //         }else if(charArray[i].compareTo('(') == 0 ){
+    //             openingBracketCount++;
+    //             int state1 = savedStates.pop();
+    //             //update state as state point to char before '('
+    //             System.out.println("state: " + state);
+
+    //             //check if non branching state then set state
+    //             if (next1Array[state-1] == next2Array[state-1]) {
+    //                 set_state(state-1, typeStringArray[state-1], state1, state1);
+    //             }              
+    //             continue;
+    //         }
+
+    //         if(charArray[i].compareTo('|')==0){
+    //             savedStates.add(state -1);
+    //             state--;
+    //             continue;
+    //         }
+    //         if(isVocab(charArray[i])){
+    //             state--;//state would be at 1 now
+    //             System.out.println(charArray[i] + " state: " +state);
+    //             continue;
+    //         }
+          
+    //     }
+    //     System.out.println("states still in stack: ");
+    //     savedStates.forEach(System.out::println);
+    // }
+}}
