@@ -1,180 +1,248 @@
-public class REmake {
-    public static Character[] charArray;
-    public static int j = 0;
-    public static int state = 0; // state
-    // public int next1 = 0;
-    // public int next2 = 0;
-    public static String[] typeStringArray;
-    public static int[] next1Array;
-    public static int[] next2Array;
-    public static int arrayLengthCounter = 0;
+import java.lang.module.FindException;
+import java.util.Stack;
 
-    // used for update states
-    public static int savedState = 0;
-    public static int state1 = 1;
-    // public static int closingBracketCount = 0;
-    // public static int openingBracketCount = 0;
-    public static int expressionCount = 0;
-    public static int stateFromRecursion = 0;
-    public static int stateAfterOpeningBracket = 0;
-    public static int stateBeforeClosingBracket = 0;
+public class REmake {
+    public static Character[] regexpCharArray; // holds regexp as characters
+    public static int arrayLengthCounter = 0; // counter for length of arrays
+    public static String[] stateTypeArray; // holds the state type
+    public static int[] next1Array; // holds 1st possible next state
+    public static int[] next2Array; // holds 2nd possible next state
+    public static int state = 0; // position of state
+    public static int j = 0; // counter/index for regexp
+
+    public static Stack<Integer> savedStatesStack = new Stack<>(); // stores savedStates
+    public static Stack<Integer> savedStatesBracketStack = new Stack<>(); // stores savedstates before a bracket
+    public static int bracketCount = 0; //determines if were in a bracket(int to accommodate nested brackets)
+    public static int savedStateBeforeBracket;
+    public static boolean escapeChar = false;
 
     public static void main(String[] args) {
         if (args.length != 1) {
             System.err.println("Usage: java REmake <regexp>");
+            System.exit(1);
         }
-
         String regexp = args[0];
-        // insert each char of string into array
-        charArray = new Character[regexp.length() + 2];
-        // placeholder for start state
-        charArray[0] = '0';
+        // insert each char of string into array, assign extra 2 spaces for start and
+        // end state
+        regexpCharArray = new Character[regexp.length() + 2];
+        // insert placeholder for start state
+        regexpCharArray[0] = '0';
         arrayLengthCounter++;
         for (int i = 0; i < regexp.length(); i++) {
             // if character is not a '(' or ')', increment arraylengthcounter
             if (!(regexp.charAt(i) == '(' || regexp.charAt(i) == ')')) {
                 arrayLengthCounter++;
             }
-            charArray[i + 1] = regexp.charAt(i);
-            // System.out.println(charArray[i] + " at index: " + i );
+            regexpCharArray[i + 1] = regexp.charAt(i);
         }
-        charArray[charArray.length - 1] = '\0';
+        // insert placeholder for end state
+        regexpCharArray[regexpCharArray.length - 1] = '\0';
         arrayLengthCounter++;
 
-        for (char a : charArray) {
+        // debug
+        for (char a : regexpCharArray) {
             System.out.println(a);
         }
-
-        typeStringArray = new String[arrayLengthCounter];
+        // init array lengths
+        stateTypeArray = new String[arrayLengthCounter];
         next1Array = new int[arrayLengthCounter];
         next2Array = new int[arrayLengthCounter];
 
+        savedStatesStack.add(state); // add starting state to savedstates
         parse();
-        // System.out.println("wellformed regex!");
-
-        updateStates(1, savedState);
-
         // print output
-        for (int i = 0; i < typeStringArray.length; i++) {
-            System.out.println(i + "," + typeStringArray[i] + "," + next1Array[i] + "," + next2Array[i]);
+        for (int i = 0; i < stateTypeArray.length; i++) {
+            System.out.println(i + "," + stateTypeArray[i] + "," + next1Array[i] + "," + next2Array[i]);
         }
     }
 
+    // sets starting state and calls expression
     public static void parse() {
-        set_state(state, "BR", j + 1, j + 1);
+        setState(state, "BR", j + 1, j + 1);
         state++;
         j++;
 
-        int br = expression();
-        // set_state(0, "BR", br, br);
-        // if exited out of expression then error as char is not an expression
-        // check if array at index j is valid(not at the end)
-        if (charArray[j] != '\0') {
-            System.out.println(68);
+        int branchReturn = expression();
+
+        // if returned from expression, either at the last state, or malformed
+        if (regexpCharArray[j] != '\0') {
+            System.out.println(57);
             error();
         }
-        set_state(state, "end", 0, 0);
+        // at last state so call setState
+        setState(state, "end", 0, 0);
     }
 
     // E -> T
     // E -> TE
     public static int expression() {
         int result = term();
-
-        // System.out.println("j at expression(): " + j);
-        if (charArray[j] == '\0') {
+        // if current index is at end state, return
+        if (regexpCharArray[j] == '\0') {
             return result;
         }
-
         // j would be +1 for this(next char in array)
         // isvocab looks ahead if next char is a literal
-        if (isVocab(charArray[j]) || (charArray[j].compareTo('(')) == 0) {
+        if (isVocab(regexpCharArray[j]) || (regexpCharArray[j].compareTo('(')) == 0) {
+            if (regexpCharArray[j] == '(') {
+                bracketCount += 1;
+            }
             // make note once this reaches mark as visited(end of recursion)
-            int br = expression();
+            int branchReturn = expression();
 
-            return br;
+            return branchReturn;
         }
         return result;
     }
 
+    // T -> F
+    // T -> F*
+    // T -> F | E
+    //T -> F. 
     public static int term() {
-        // calls factor first as 1st char cannot be special char
         int result = factor();
-        // final state of first literal before * or | (final state of result)
+        // state of the first literal before a * or |
         int finalState = state - 1;
         // System.out.println("j: " + j + " char: " + charArray[j]);
-        if ((charArray[j] != null) && charArray[j].compareTo('*') == 0) {
-            // n1 is the previous state and n2 is the next state
-            set_state(state, "BR", result, state + 1);
+
+        // check that char is not null and if char is a '*'
+        if ((regexpCharArray[j] != null) && regexpCharArray[j].compareTo('*') == 0) {
+            savedStatesStack.add(state - 2); // add state connecting to br to savedstates
+            setState(state, "BR", result, state + 1);
+            System.out.println("state: " + state + " result: " + result);
+
+            // check if currently not in a bracket and no savedstates in bracketstack
+            if ((bracketCount==0) && savedStatesBracketStack.isEmpty()) {
+                for (int i = 0; i < savedStatesStack.size(); i++) {
+                    int savedState = savedStatesStack.pop();
+                    // only change if state is a literal
+                    if (next1Array[savedState] == next2Array[savedState]) {
+                        setState(savedState, stateTypeArray[savedState], state, state);
+                    }
+                }
+            } else {
+                // update the state in bracketstack
+                int savedState = savedStatesBracketStack.pop();
+                // only change if state is a literal
+                if (next1Array[savedState] == next2Array[savedState]) {
+                    setState(savedState, stateTypeArray[savedState], state, state);
+                }
+                // update br
+                setState(state, stateTypeArray[state], savedState + 1, state + 1);
+
+            }
+            
             j++;
             state++;
             return state - 1;
         }
 
-        if ((charArray[j] != null) && charArray[j].compareTo('|') == 0) {
-            // keep track of state(number of slot to build |), is the branching state
-            int br = state;
-            state++;
-            j++;
-            // build the state after | first and save to result
-            int result2 = factor();
-            // n1 is the previous state before | and and n2 is the state after the |
-            set_state(br, "BR", result, result2);
-            result = br;
-            // check if final state of previous state is same for n1 & n2
-            // means non branching state
-            if (next1Array[finalState] == next2Array[finalState]) {
-                set_state(finalState, typeStringArray[finalState], state, state);
-            } else {
-                // it is a branching state
-                set_state(finalState, typeStringArray[finalState], next1Array[finalState], state);
-            }
+        if ((regexpCharArray[j] != null) && regexpCharArray[j].compareTo('?') == 0) {
+            
         }
 
-        // add later
-        // for '.' call factor and match any literal
-        // for '?'
-        // for '\followed by any specialChar'
+        int stateInBracket = 0; // will never be 0 as 0 is start state
+        // if char is a '|'
+        if ((regexpCharArray[j] != null) && regexpCharArray[j].compareTo('|') == 0) {
+            // keep track of current state as it is the branching state
+            int currentState = state;
+            // check if currently not in a bracket and no savedstates in bracketstack
+            if ((bracketCount==0) && savedStatesBracketStack.isEmpty()) {
+                //if preceding is not a bracket
+                if (regexpCharArray[j-1] != ')') {
+                    savedStatesStack.add(state - 2); // add state connecting to br to savedstates
+                    // update previous states connecting to branch state
+                    for (int i = 0; i < savedStatesStack.size(); i++) {
+                        int savedState = savedStatesStack.pop();
+                        // only change if state is a literal
+                        if (next1Array[savedState] == next2Array[savedState]) {
+                            setState(savedState, stateTypeArray[savedState], currentState, currentState);
+                            System.out.println("savedstate: " + savedState + " currentstate: " + currentState);
+                        }
+                    }
+                    savedStatesStack.add(state - 1);
+                }else{
+                    //need to connect state before bracket to br
+                    setState(savedStateBeforeBracket, stateTypeArray[savedStateBeforeBracket], currentState, currentState);
+                }
+
+            } else if(!savedStatesBracketStack.isEmpty()){
+                // update the state in bracketstack
+                System.out.println("savedstatesBracket: " + savedStatesBracketStack.isEmpty());
+                int savedState = savedStatesBracketStack.pop();
+                savedStateBeforeBracket = savedState;
+                // only change if state is a literal
+                if (next1Array[savedState] == next2Array[savedState]) {
+                    setState(savedState, stateTypeArray[savedState], state, state);
+                    System.out.println("savedstate: " + savedState + " state: " + state + " j: " + j);
+                }
+                stateInBracket = savedState + 1;
+
+            }
+
+            state++;
+            j++;
+            // build the state after the '|' first and save to result
+            int result2 = factor();
+            if (stateInBracket != 0) {
+                setState(currentState, "BR", stateInBracket, currentState + 1);
+            } else {
+                setState(currentState, "BR", result, result2);
+            }
+            result = currentState;
+            // check if final state of previous state is same for n1 & n2
+            // as it means it is a non-branching state
+            if (next1Array[finalState] == next2Array[finalState]) {
+                setState(finalState, stateTypeArray[finalState], state, state);
+            } else {
+                // it is a branching state
+                setState(finalState, stateTypeArray[finalState], next1Array[finalState], state);
+            }
+
+        }
+
         return result; // or return result or br
     }
 
-    // F -> v
+    // F -> V
     // F -> (E)
     public static int factor() {
         int result = 0;
-        // finlastate of whatever was before "("
-        int finalState = j - 1;
-        // System.out.println("char: " + charArray[j] + " j:" + j);
-        if (isVocab(charArray[j])) {
-            // System.out.println("j: " + j + " char: " + charArray[j]);
-            // System.out.println("char: " + charArray[j] + " at index: " + j + " is a
-            // vocab");
-
-            set_state(state, charArray[j].toString(), state + 1, state + 1);
+        //check if \ char
+        if(regexpCharArray[j] == '\\'){
+            System.out.println("matches");
+            escapeChar = true;
+            j++;
+        }
+        // check if char is a vocab(literal) or preceded by an escape char
+        if (isVocab(regexpCharArray[j]) || escapeChar) {
+            setState(state, regexpCharArray[j].toString(), state + 1, state + 1);
             j++;
             result = state;
             state++;
-            // System.out.println("j: " +j);
+            escapeChar = false;
         } else {
-            if (charArray[j].compareTo('(') == 0) {
-                // implement look ahead to check if closing parenthesis is follwoed by special
-                // character
+            if (regexpCharArray[j].compareTo('(') == 0) {
+                // look ahead to check if closing parenthesis is followed by special character
+                // by calling expression
+                // save state before (
+                savedStatesBracketStack.add(state - 1);
+                bracketCount += 1;
+
                 j++;
                 result = expression();
-                // set_state?????
-                // set_state(finalState, typeStringArray[finalState], result, result);
 
-                if (charArray[j].compareTo(')') == 0) {
+                if (regexpCharArray[j].compareTo(')') == 0) {
                     j++;
-                    set_state(finalState, typeStringArray[finalState], result, result);
+                    bracketCount -= 1;
                 } else {
                     // malformed regex
-                    System.out.println(174);
+                    System.out.println(154);
                     error();
                 }
             } else {
                 // malformed regex
-                System.out.println(180);
+                System.out.println(159);
                 error();
             }
         }
@@ -184,7 +252,7 @@ public class REmake {
 
     // check if character is a literal(alphabet or number)
     public static boolean isVocab(Character ch) {
-        Character[] specialChars = { '*', '.', '?', '|', '(', ')', '\\' };
+        Character[] specialChars = { '*', '?', '|', '(', ')' };
         // check if char is any one of these
         for (Character specialChar : specialChars) {
             if (ch.compareTo(specialChar) == 0)
@@ -193,111 +261,20 @@ public class REmake {
         return true;
     }
 
-    // build a state(output) once regex is determined to be wellformed
-    public static int set_state(int i, String type, int n1, int n2) {
-        // System.out.println(type);
-        typeStringArray[i] = type;
+    // add components of a state(output) to arrays
+    public static void setState(int i, String type, int n1, int n2) {
+        stateTypeArray[i] = type;
         next1Array[i] = n1;
         next2Array[i] = n2;
-        return i;
     }
 
+    // outputs error message and existing entries to console
     public static void error() {
-        System.err.println("malformed regex! Existing entries:");
-        for (int i = 0; i < typeStringArray.length; i++) {
-            System.out.println(i + "," + typeStringArray[i] + "," + next1Array[i] + "," + next2Array[i]);
+        System.err.println("Malformed regex! Existing states:");
+        for (int i = 0; i < stateTypeArray.length; i++) {
+            System.out.println(i + "," + stateTypeArray[i] + "," + next1Array[i] + "," + next2Array[i]);
         }
         System.exit(1);
     }
-
-    public static int updateStates(int index, int savedState1) {
-        System.out.println("state1: " + state1 + " savedState: " + savedState1);
-        // saved state starts at 0
-        // state1 should be whatever parsed into index
-        for (int i = index; i < charArray.length; i++) {
-
-            // saved state should always be behind state by 2
-            if ((state1 - savedState1 >= 3) && (expressionCount == 0 || charArray[i] == '*')) {
-                savedState1++;
-            }
-            //if came from bracket and not an |
-            if (expressionCount > 0 && (charArray[i] != '|')) {
-                set_state(stateBeforeClosingBracket, typeStringArray[stateBeforeClosingBracket], state1, state1);
-            }
-
-            if (charArray[i].compareTo('|') == 0) {
-                // get savedstate from before to point to branch state
-                if (next1Array[savedState1] == next2Array[savedState1]) {
-                    set_state(savedState1, typeStringArray[savedState1], state1, state1);
-                } else {
-                    // it is a branching state
-                    set_state(savedState1, typeStringArray[savedState1], next1Array[savedState1], state1);
-                }
-                // check if came from bracket(additional processing) if you just cam from a
-                // bracket
-                if (expressionCount > 0) {
-                    // get branch to point to stateafterbracket
-                    set_state(state1, typeStringArray[state1], stateAfterOpeningBracket, state1 + 1);
-                }
-                // look ahead and see if | followed by expression, get branch to point to
-                // state+1
-                if (charArray[i + 1] == '(') {
-                    set_state(state1, typeStringArray[state1], state1-1, state1+1);
-                }
-
-                savedState1 = state1;
-                state1++;
-                expressionCount--;
-            }
-
-            if(charArray[i] == '*'){
-                System.out.println("ss: " + savedState1 + " expressionCount: " + expressionCount);
-
-                //if came from expression
-                if (expressionCount > 0){
-                    //set state before expression to point to *
-                    if (next1Array[savedState1] == next2Array[savedState1]) {
-                        set_state(savedState1, typeStringArray[savedState1], state1, state1);
-                    } else {
-                        // it is a branching state
-                        set_state(savedState1, typeStringArray[savedState1], next1Array[savedState1], state1);
-                    }
-                    // get branch to point to stateafterbracket
-                    set_state(state1, typeStringArray[state1], stateAfterOpeningBracket, state1 + 1);
-                }
-                else if (expressionCount == 0){
-                    set_state(savedState1, typeStringArray[savedState1], state1, state1);
-                }
-            }
-
-            // when this is called, state points to character after '('
-            if (charArray[i].compareTo('(') == 0) {
-                i++;
-                stateAfterOpeningBracket = state1;
-                int result = updateStates(i, savedState1);
-
-                i = result;
-                state1 = stateFromRecursion;
-                expressionCount++;
-                System.out.println("index: " + i);
-
-            } else if (charArray[i].compareTo(')') == 0) {
-                System.out.println("state2: " + state1);
-                stateFromRecursion = state1;
-                stateBeforeClosingBracket = state1 - 1;
-
-                return i;
-            }
-
-            if (isVocab(charArray[i])) {
-                state1++;
-            }
-
-        }
-
-        return index;
-    }
-
-
 
 }
