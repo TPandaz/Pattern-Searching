@@ -41,16 +41,10 @@ public class REmake {
         regexpCharArray[regexpCharArray.length - 1] = '\0';
         arrayLengthCounter++;
 
-        // debug
-        for (char a : regexpCharArray) {
-            System.out.println(a);
-        }
         // init array lengths
         stateTypeArray = new String[arrayLengthCounter];
         next1Array = new int[arrayLengthCounter];
         next2Array = new int[arrayLengthCounter];
-
-        System.out.println(arrayLengthCounter);
 
         savedStatesStack.add(state); // add starting state to savedstates stack
         savedStatesBranchStack.add(state); // add starting state to branch stack
@@ -108,13 +102,10 @@ public class REmake {
 
     // T -> F
     // T -> F*
+    // T -> F?
     // T -> F | E
-    // T -> F.
     public static int term() {
         int result = factor();
-        // state of the first literal before a * or |
-        // System.out.println("j: " + j + " char: " + charArray[j]);
-
         // check that char is not null and if char is a '*'
         if ((regexpCharArray[j] != null) && regexpCharArray[j].compareTo('*') == 0) {
             processRepetition(result);
@@ -122,7 +113,7 @@ public class REmake {
             state++;
             return state - 1;
         }
-
+        // check that char is not null and if char is a '?'
         if ((regexpCharArray[j] != null) && regexpCharArray[j].compareTo('?') == 0) {
             processOption(result);
             j++;
@@ -130,7 +121,7 @@ public class REmake {
             return state - 1;
         }
 
-        // if char is a '|'
+        // check that char is not null and if char is a '|'
         if ((regexpCharArray[j] != null) && regexpCharArray[j].compareTo('|') == 0) {
             result = processAlternation(result);
         }
@@ -147,7 +138,13 @@ public class REmake {
             escapeChar = true;
             j++;
         }
-        // check if char is a vocab(literal) or preceded by an escape char
+        if(regexpCharArray[j] == '.'){
+            setState(state, "WC", state+1, state+1);
+            j++;
+            result = state;
+            state++;
+        }else{
+            // check if char is a vocab(literal) or preceded by an escape char
         if (isVocab(regexpCharArray[j]) || escapeChar) {
             setState(state, regexpCharArray[j].toString(), state + 1, state + 1);
             j++;
@@ -169,7 +166,6 @@ public class REmake {
                 if (regexpCharArray[j].compareTo(')') == 0) {
                     j++;
                     bracketCount -= 1;
-                    System.out.println("this executes and bracketcount: " + bracketCount);
                 } else {
                     // malformed regex
                     System.out.println(154);
@@ -181,6 +177,8 @@ public class REmake {
                 error();
             }
         }
+        }
+        
         return result;
 
     }
@@ -190,8 +188,8 @@ public class REmake {
         savedStatesStack.add(state - 2); // add state connecting to br to savedstates
         setState(state, "BR", result, state + 1);
 
-        // check if j-2 is a ?, update state -3 to point at current state(only
-        // valid for non-bracket)
+        // check if j-2 is a ?, update state -3 to point at current state(only valid for
+        // non-brackets)
         if (regexpCharArray[j - 2] == '?') {
             setState(state - 3, stateTypeArray[state - 3], state, state);
         }
@@ -208,42 +206,41 @@ public class REmake {
                 }
             }
         } else {
-
-            System.out.println(savedStatesBracketStack.isEmpty());
             // update the state in bracketstack
             int savedState = savedStatesBracketStack.pop();
-            System.out.println("savedstateBracket: " + savedState);
-
+            setState(state, "BR", savedState+1, next2Array[state]);
+            // check if state is a br or literal
             if (next1Array[savedState] == next2Array[savedState]) {
                 setState(savedState, stateTypeArray[savedState], state, state);
             } else {
                 setState(savedState, stateTypeArray[savedState], next1Array[savedState], state);
             }
-            // check if theres is a ')' followed by a branch preceding
-            if (regexpCharArray[j - 1] == ')' && regexpCharArray[j-2] != '\\') {
+            // check if theres is a ')' before current char and no '\\' before that
+            if (regexpCharArray[j - 1] == ')' && regexpCharArray[j - 2] != '\\') {
+                // if so, check in the bracket if theres exists an '|'
                 for (int j2 = j - 2; j2 >= 0; j2--) {
                     if (regexpCharArray[j2] == '(')
                         break;
                     if (regexpCharArray[j2] == '|') {
-                        setState(state, stateTypeArray[state], j2-1, state + 1);
-                        setState(j2-2, stateTypeArray[j2-2] , state, state);
+                        // have current state point to '|' and set state before '|' to point to current
+                        // state
+                        setState(state, stateTypeArray[state], j2 - 1, state + 1);
+                        setState(j2 - 2, stateTypeArray[j2 - 2], state, state);
                     }
-
                 }
             } else {
-                //update current state
+                // update current state
                 setState(state, stateTypeArray[state], savedState + 1, state + 1);
             }
 
         }
+        savedStatesStack.add(state);
     }
 
     // method is called when a '?' is encountered
     public static void processOption(int result) {
         savedStatesStack.add(state - 2); // add state connecting to br to savedstates
         setState(state, "BR", result, state + 1);
-        System.out.println("state: " + state + " result: " + result);
-
         // update state before'?' to point to state after '?'
         if (next1Array[state - 1] == next2Array[state - 1]) {
             setState(state - 1, stateTypeArray[state - 1], state + 1, state + 1);
@@ -273,6 +270,7 @@ public class REmake {
             // might(or might not) be in a bracket but savedstateBracket is not empty
             // update the state in bracketstack
             int savedState = savedStatesBracketStack.pop();
+            setState(state, "BR", savedState+1, next2Array[state]);
             // check if state is a literal or br
             if (next1Array[savedState] == next2Array[savedState]) {
                 setState(savedState, stateTypeArray[savedState], state, state);
@@ -283,12 +281,25 @@ public class REmake {
             if ((savedState != 0) && (next1Array[savedState - 1] == savedState + 1)) {
                 setState(savedState - 1, stateTypeArray[savedState - 1], state, state);
             }
-
-            System.out.println(savedState);
-            // update br
-            setState(state, stateTypeArray[state], savedState + 1, state + 1);
-
+            // check if theres is a ')' before current char and no '\\' before that
+            if (regexpCharArray[j - 1] == ')' && regexpCharArray[j - 2] != '\\') {
+                // if so, check in the bracket if theres exists an '|'
+                for (int j2 = j - 2; j2 >= 0; j2--) {
+                    if (regexpCharArray[j2] == '(')
+                        break;
+                    if (regexpCharArray[j2] == '|') {
+                        // have current state point to '|' and set state before '|' to point to current
+                        // state
+                        setState(state, stateTypeArray[state], j2 - 1, state + 1);
+                        setState(j2 - 2, stateTypeArray[j2 - 2], state, state);
+                    }
+                }
+            } else {
+                // update current state
+                setState(state, stateTypeArray[state], savedState + 1, state + 1);
+            }
         }
+        savedStatesStack.add(state);
     }
 
     // method is called when a '|' char is encountered
@@ -296,13 +307,6 @@ public class REmake {
         int previousState = state - 1;
         int currentState = state; // keep track of current state
         int savedState; // savedstate in a stack
-        // check if not in a bracket
-        // if (bracketCount == 0) {
-        // savedState = savedStatesBranchStack.pop();
-
-        // } else {
-        // savedState = savedStatesBracketStack.pop();
-        // }
         savedState = savedStatesBranchStack.pop();
 
         // assign savedstate to point to current state
@@ -310,18 +314,13 @@ public class REmake {
             setState(savedState, stateTypeArray[savedState], currentState, currentState);
         } else {
             setState(savedState, stateTypeArray[savedState], next1Array[savedState], currentState);
-            System.out.println("does this execute");
         }
-        System.out.println(savedState + " currentstate: " + currentState);
-
         state++;
         int currentJValue = j;
         j++;
 
         // build next state after '|' and save to result2
         int result2 = factor();
-        System.out.println("result2: " + result2);
-
         // determine if savedstate is greater or currentstate+1 is greater, as result2
         // calls factor which evalutes everything after, so prevent currentstate from
         // being overwritten by first branch
@@ -329,7 +328,6 @@ public class REmake {
             setState(currentState, "BR", savedState + 1, savedStatesBranchStack.pop());
         } else {
             setState(currentState, "BR", savedState + 1, currentState + 1);
-            System.out.println("savedstate: " + savedState);
         }
         // set state before '|' to point to end
         setState(previousState, stateTypeArray[previousState], arrayLengthCounter - 1, arrayLengthCounter - 1);
