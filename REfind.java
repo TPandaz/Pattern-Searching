@@ -1,6 +1,8 @@
 import java.io.File;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -10,40 +12,78 @@ import java.util.Scanner;
  * 
  */
 public class REfind{
-    private static Deque deque; //The Deque used to see the current an next states of the FSM
+    //The FSM
     private static String[] c; //The characters of the states
     private static int[] n1; //The 1st next possible state
     private static int[] n2; //The 2nd next possible state
     private static boolean[] v; //The visited states | true if visited
+
+    private static String currentLine; //The current line of the file
+    //Line pointers
     private static int mark; //The current starting position of the FSM
     private static int pt; //The current position of the FSM
-    private static String currentLine; //The current line of the file
-    private static boolean match;
+
+    private static Deque deque; //The Deque used to see the current an next states of the FSM
+    private static boolean match; //True is a match has been found
+    
+    private static String usage = "java REmake <pattern> | REfind <path to text file>"; //The usage of the class
 
     public static void main(String[] args){
-        String usage = "java REmake <pattern> | REfind <path to text file>";
-        if(args.length < 1){
-            System.err.println("Please add a path to the text file after REfind. \n"+usage);
-        }
-        if(args.length > 1){
-            System.err.println("Please add ONLY the path to the text file after REfind. \n"+usage);
-        }
-
-        parseSTDOut();
-        matchFile(args[0]);
+        // if(args.length < 1){
+        //     System.err.println("Please add a path to the text file after REfind. \n"+usage);
+        // }
+        // if(args.length > 1){
+        //     System.err.println("Please add ONLY the path to the text file after REfind. \n"+usage);
+        // }
+        parseSTDIn();
+        //matchFile(args[0]);
     }
 
     /**
      * Parses the content of STDIn to create the state arrays
      */
-    private static void parseSTDOut(){
+    private static void parseSTDIn(){
+        Scanner sc = new Scanner(System.in);
+        String[] line;
+        ArrayList<String[]> in = new ArrayList<String[]>();
+        System.err.println("Reading STD in:");
+
+        //Reads the piped input into an array list for parsing into the varios arrays
         try{
             //Parse the content of STD out to their respective arrays
+            while(sc.hasNextLine()){
+                line = sc.nextLine().split(",");
+                if(line.length == 4){
+                    in.add(line);
+                }
+            }
         }catch(Exception e){
             System.err.println("Something went wrong!\n");
             e.printStackTrace(System.err);
         }
-        v = new boolean[c.length];        
+
+        if(in.size() > 0){
+            //Initialises all the FSM arrays
+            c = new String[in.size()];
+            n1 = new int[in.size()];
+            n2 = new int[in.size()];
+            v = new boolean[in.size()];        
+            try{
+                //Parses the in list into their respective arrays
+                for(int i = 0; i < in.size(); i++){
+                    c[i] = in.get(i)[1];
+                    n1[i] = Integer.parseInt(in.get(i)[2]);
+                    n2[i] = Integer.parseInt(in.get(i)[3]);
+                }
+            }catch(Exception e){
+                System.err.println("Error. There was a problem parsing the input into their arrays.");
+                e.printStackTrace();
+            }
+        }else{
+            System.err.println("Error. There was no piped input found to generate the FSM. \n"+usage);
+        }
+
+        printArrays();
     }
 
     /**
@@ -123,4 +163,34 @@ public class REfind{
     private static void resetPT(){
         pt = mark; //Sets the pointer to mark
     }
+
+
+
+    /***********************************
+     *          DEBUG OUTPUTS          *
+     ***********************************/
+    private static void printArrays(){
+        printSTRArray(c);
+        printIntrray(n1);
+        printIntrray(n2);
+    }
+
+    private static void printSTRArray(String[] arr){
+        System.out.print("STR Arr: ");
+        for(int i = 0; i < arr.length; i++){
+            System.out.print(arr[i]);
+            if(i != arr.length - 1)
+                System.out.print(", ");
+        }
+        System.out.println("");
+    }
+    private static void printIntrray(int[] arr){
+        System.out.print("INT Arr: ");
+        for(int i = 0; i < arr.length; i++){
+            System.out.print(arr[i]);
+            if(i != arr.length - 1)
+                System.out.print(", ");
+        }
+        System.out.println("");
+    }    
 }
