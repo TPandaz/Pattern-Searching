@@ -26,17 +26,17 @@ public class REfind{
     private static Deque deque; //The Deque used to see the current an next states of the FSM
     private static boolean match; //True is a match has been found
     
-    private static String usage = "java REmake <pattern> | REfind <path to text file>"; //The usage of the class
+    private static String usage = "java REmake \"<pattern>\" | REfind <path to text file>"; //The usage of the class
 
     public static void main(String[] args){
-        // if(args.length < 1){
-        //     System.err.println("Please add a path to the text file after REfind. \n"+usage);
-        // }
-        // if(args.length > 1){
-        //     System.err.println("Please add ONLY the path to the text file after REfind. \n"+usage);
-        // }
+        if(args.length < 1){
+            System.err.println("Please add a path to the text file after REfind. \n"+usage);
+        }
+        if(args.length > 1){
+            System.err.println("Please add ONLY the path to the text file after REfind. \n"+usage);
+        }
         parseSTDIn();
-        //matchFile(args[0]);
+        matchFile(args[0]);
     }
 
     /**
