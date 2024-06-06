@@ -17,6 +17,14 @@ public class Deque{
         head = null;
         tail = null;
         length = 0;
+        addScan();
+    }
+
+    /**
+     * Adds a scan element to the queue
+     */
+    private void addScan(){
+        pushFront(-1);
     }
 
     /**
@@ -80,10 +88,20 @@ public class Deque{
     /**
      * Gets the first item in the queue
      * @return the int value of the first item in the queue
+     * @throws if there are no items in the queue
      */
     public int front() throws NullPointerException{
         return head.getState();
     } 
+
+    /**
+     * Gets the last item in the queue
+     * @return the int value of the last item in the queue
+     * @throws NullPointerException If there are no items in the queue
+     */
+    public int back() throws NullPointerException{
+        return tail.getState();
+    }
 
     /**
      * Checks if queue is empty
