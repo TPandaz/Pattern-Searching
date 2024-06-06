@@ -17,13 +17,12 @@ public class Deque{
         head = null;
         tail = null;
         length = 0;
-        addScan();
     }
 
     /**
      * Adds a scan element to the queue
      */
-    private void addScan(){
+    public void pushScan(){
         pushFront(-1);
     }
 
