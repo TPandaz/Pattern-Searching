@@ -22,8 +22,8 @@ public class Deque{
     /**
      * Adds a scan element to the queue
      */
-    public void pushScan(){
-        push(-1);
+    public void putScan(){
+        put(-1);
     }
 
     /**
