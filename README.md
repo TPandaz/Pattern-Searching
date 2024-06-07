@@ -4,7 +4,7 @@
 
 ## REfind
 
-**__Usage:__**
+__**Usage:**__
 
 `java REfind "<path-to-search-text>"`
 
