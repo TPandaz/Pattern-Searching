@@ -98,6 +98,7 @@ public class REfind{
             while(sc.hasNextLine()){
                 newLine();
                 currentLine = sc.nextLine();
+                System.err.println("\tMatching line : " + currentLine);
                 matchLine();               
             }
             sc.close();
@@ -115,9 +116,10 @@ public class REfind{
         //The end of the line has been reached
         if(mark >= currentLine.length())
             return;
+        System.err.println("\t\tStarting match from: m=" + mark +", c=" + currentLine.substring(mark, mark + 1));
         resetV();
         resetPT();
-
+        resetDeque();
         tryMatch();
         //A match has been found
         if(match){
@@ -133,11 +135,17 @@ public class REfind{
      * A recursive function that will try to find a match from mark
      * returns if a match is found or no match is found
      */
-    private static void tryMatch(){        
+    private static void tryMatch(){  
+        System.err.println("");      
         int s = deque.pop();
+            System.err.print("\t\t\t s="+s +", pt="+pt);
+            deque.dumpstates();
         //The scan is reached. There are no more possible states
-        if(s == -1)
+        if(s == -1){
+            System.err.println("");
             return;
+        }
+        System.err.print(", Matching: "+ c[s]+"="+currentLine.substring(pt, pt + 1));
         //If the pointer has reached the end of the line
         if(pt == currentLine.length())
             return;
@@ -146,23 +154,30 @@ public class REfind{
 
         //A match has been found
         if(n1[s] == 0){
+            System.err.println(", match found!!");
             match = true;
             return;
         }
-        //If the the next two possible states do no match there is a branch
-        //I have decided to use this that comparing The state character to "BR" because comparing int's is faster that comparing strings.
-        //And ultimatly this will lead to the same result.
-        if(n1[s] != n2[s]){
-            deque.put(n1[s]);
-            deque.put(n2[s]);
-            deque.putScan();
+        //If there is a branch
+        if(c[s].compareTo("BR") == 0){
+            System.err.print(" Branching!");
+            deque.push(n1[s]);
+            deque.push(n2[s]);
             branch();
+            return;
+            //If the character is a wild card
+        }else if(c[s].compareTo("WC") == 0){
+            System.err.print("WC = match!");
+            deque.push(n1[s]);
+            pt++;
         }else{
             if(c[s].compareTo(currentLine.substring(pt, pt+1)) == 0){
+                System.err.print("match!");
                 deque.push(n1[s]);
                 pt++;
             }
         }     
+        tryMatch();
     }
 
     /**
@@ -170,21 +185,24 @@ public class REfind{
      */
     private static void branch(){
         //Pops the current state and the scan off
-        deque.pop();
         int s1 = deque.pop();
         int s2 = deque.pop();
         //If the first state has been visited, try state 2 first.
         if(v[s1]){
             deque.push(s2);
+            tryMatch();
             if(match)
                 return;
             deque.push(s1);
         }else{ //Otherwise, try state 1 first
             deque.push(s1);
+            tryMatch();
             if(match)
                 return;
             deque.push(s2);
         }   
+        deque.putScan();
+        tryMatch();
     }
 
     /**
@@ -192,13 +210,18 @@ public class REfind{
      */
     private static void newLine(){
         mark = 0; //Sets mark to 0
+        resetDeque();
+        match = false;
+    }
+
+    /**
+     * Resets the deque to initial state 0 and adds a new scan element
+     */
+    private static void resetDeque(){
         deque = new Deque();
         //Initialises the deque the state 0 values
         deque.putScan();
         deque.push(0);
-        deque.put(n1[0]);
-        deque.put(n2[0]);
-        match = false;
     }
 
     /**

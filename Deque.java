@@ -131,13 +131,13 @@ public class Deque{
      */
     public void push(int state){
         temp = new Node(state);
-        length++;
         temp.setBack(head);
         if(head != null)
             head.setFront(temp);
         head = temp;
         if(tail == null)
             tail = head;
+        length++;
     }
 
     /**
@@ -153,5 +153,21 @@ public class Deque{
         if(head == null)
             head = tail;
         length++;
+    }
+
+    public void dumpstates(){
+        System.err.print(" | h=");
+        if(head == null){
+            System.err.print("null");
+        }else{
+            System.err.print(head.getState());
+        }
+        System.err.print( ", t=");
+        if(tail == null){
+            System.err.print("null");
+        }else{
+            System.err.print(tail.getState());
+        }
+        System.err.print(" |");
     }
 }
