@@ -1,5 +1,6 @@
 /**
- * A double ended Queue used with REfind
+ * A double ended Queue 
+ * Usetlises properties of a doubly linked list to link the different value's to its neighbours
  * @author Dolf ten Have
  * SID: 1617266, 
  * Date: 06/06/2024
@@ -20,13 +21,6 @@ public class Deque{
     }
 
     /**
-     * Adds a scan element to the queue
-     */
-    public void putScan(){
-        put(-1);
-    }
-
-    /**
      * A signle item in the Deque
      */
     private class Node{
@@ -42,13 +36,6 @@ public class Deque{
             front = null;
             back = null;
             this.value = value;
-        }
-        /**
-         * Gets the Node to the front of this node
-         * @return The node to the front or null if there is none
-         */
-        private Node getFront(){
-            return front;
         }
 
         /**
@@ -79,29 +66,11 @@ public class Deque{
          * Gets the value of the node
          * @return An int with the value of the node
          */
-        private int getState(){
+        private int getValue(){
             return value;
         }
     }
-
-    /**
-     * Gets the first item in the queue
-     * @return the int value of the first item in the queue
-     * @throws if there are no items in the queue
-     */
-    public int front() throws NullPointerException{
-        return head.getState();
-    } 
-
-    /**
-     * Gets the last item in the queue
-     * @return the int value of the last item in the queue
-     * @throws NullPointerException If there are no items in the queue
-     */
-    public int back() throws NullPointerException{
-        return tail.getState();
-    }
-
+    
     /**
      * Checks if queue is empty
      * @return true if the queue is empty
@@ -117,7 +86,7 @@ public class Deque{
      * Removes the item at the front of the queue
      */
     public int pop() throws NullPointerException{
-        int i = head.getState();
+        int i = head.getValue();
         head = head.getBack();
         if(head == null)
             tail = null;
@@ -160,13 +129,13 @@ public class Deque{
         if(head == null){
             System.err.print("null");
         }else{
-            System.err.print(head.getState());
+            System.err.print(head.getValue());
         }
         System.err.print( ", t=");
         if(tail == null){
             System.err.print("null");
         }else{
-            System.err.print(tail.getState());
+            System.err.print(tail.getValue());
         }
         System.err.print(" |");
     }
