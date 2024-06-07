@@ -1,4 +1,10 @@
 import java.util.Stack;
+/**
+ * @author Samuel Tan
+ * SID: 1617175
+ * Date: 07/06/2024
+ * 
+ */
 
 public class REmake {
     public static Character[] regexpCharArray; // holds regexp as characters
@@ -14,9 +20,7 @@ public class REmake {
     public static Stack<Integer> savedStatesBranchStack = new Stack<>(); // stores saved states for alternation operator
 
     public static int bracketCount = 0; // determines if were in a bracket(int to accommodate nested brackets)
-    public static int savedStateBeforeBracket;
     public static boolean escapeChar = false;
-    public static int branchCount = 0;
 
     public static void main(String[] args) {
         if (args.length != 1) {
@@ -135,10 +139,12 @@ public class REmake {
         int result = 0;
         // check if \ char
         if (regexpCharArray[j] == '\\') {
+            //move to next char and set escape flag
             escapeChar = true;
             j++;
         }
         if(regexpCharArray[j] == '.'){
+            //setstate to 'WC'
             setState(state, "WC", state+1, state+1);
             j++;
             result = state;
@@ -316,7 +322,6 @@ public class REmake {
             setState(savedState, stateTypeArray[savedState], next1Array[savedState], currentState);
         }
         state++;
-        int currentJValue = j;
         j++;
 
         // build next state after '|' and save to result2
@@ -337,7 +342,6 @@ public class REmake {
         if (bracketCount != 0) {
             savedStatesStack.add(currentState);
         }
-        branchCount++;
         return result;
     }
 
