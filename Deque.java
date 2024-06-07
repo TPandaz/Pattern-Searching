@@ -23,7 +23,7 @@ public class Deque{
      * Adds a scan element to the queue
      */
     public void pushScan(){
-        pushFront(-1);
+        push(-1);
     }
 
     /**
@@ -129,7 +129,7 @@ public class Deque{
      * Adds an item to the front of the queue
      * @param state an int that will be added at the front of the queue
      */
-    public void pushFront(int state){
+    public void push(int state){
         temp = new Node(state);
         length++;
         temp.setBack(head);
@@ -144,7 +144,7 @@ public class Deque{
      * Adds an item at the end of the queue
      * @param state an int that will be added to the end of the queue
      */
-    public void pushBack(int state){
+    public void put(int state){
         temp = new Node(state);
         temp.setFront(tail);
         if(tail != null)
