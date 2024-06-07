@@ -2,7 +2,7 @@
  * A double ended Queue 
  * Usetlises properties of a doubly linked list to link the different value's to its neighbours
  * @author Dolf ten Have
- * SID: 1617266, 
+ * SID: 1617266, 1617175
  * Date: 06/06/2024
  */
 public class Deque{

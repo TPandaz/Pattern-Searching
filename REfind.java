@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 /**
  * @author Dolf ten Have
- * SID: 1617266, 
+ * SID: 1617266, 1617175
  * Date: 07/06/2024
  * 
  */
