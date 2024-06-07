@@ -143,7 +143,13 @@ public class REmake {
             escapeChar = true;
             j++;
         }
-        if(regexpCharArray[j] == '.'){
+        if(regexpCharArray[j] == '.' && regexpCharArray[j-1] == '\\'){
+            setState(state, ".", state+1, state+1);
+            j++;
+            result = state;
+            state++;
+        }
+        else if(regexpCharArray[j] == '.'){
             //setstate to 'WC'
             setState(state, "WC", state+1, state+1);
             j++;

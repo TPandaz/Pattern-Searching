@@ -5,7 +5,10 @@ This program follows Tony's code on the parser and compiler. It evaluates the re
 
 Usage: java Remake > make.txt
 
-*Note: The '|' has the lowest precedence so it splits everything before and after it into 2 possible states.*
+*Note: The '|' has the lowest precedence so it splits everything before and after it into 2 possible states. 
+I have also initialised the start state as a branch state pointing to the first state in the regexp. 
+A 'WC' was used to match any literal when a '.' is encountered *
+
 
 ## REfind
 
