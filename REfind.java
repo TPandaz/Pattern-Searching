@@ -94,10 +94,11 @@ public class REfind{
         try{
             File file = new File(path);    
             Scanner sc = new Scanner(file);
+            System.out.println("Searching the text:");
             while(sc.hasNextLine()){
                 newLine();
                 currentLine = sc.nextLine();
-                
+                matchLine();               
             }
             sc.close();
         }catch(Exception e){
@@ -107,38 +108,96 @@ public class REfind{
     }
 
     /**
-     * Will try to find match on the current
-     * returns if a match is found of mark >= line length
+     * A recursive function that Will try to find a pattern match on the current line
+     * returns if a match is found or mark >= line length
      */
     private static void matchLine(){
+        //The end of the line has been reached
+        if(mark >= currentLine.length())
+            return;
+        resetV();
+        resetPT();
+
         tryMatch();
+        //A match has been found
         if(match){
             System.out.println(currentLine);
             return;
         }
         //No match found
-        resetV();
-        resetPT();
         mark++;
         matchLine();
     }
 
     /**
-     * Will try to find a match from mark
+     * A recursive function that will try to find a match from mark
      * returns if a match is found or no match is found
      */
-    private static void tryMatch(){
-        //Will work through the fsm untill a match is found or the state does not match a character
+    private static void tryMatch(){        
+        int s = deque.pop();
+        //The scan is reached. There are no more possible states
+        if(s == -1)
+            return;
+        //If the pointer has reached the end of the line
+        if(pt == currentLine.length())
+            return;
+        //marks this state as
+        visit(s);
+
+        //A match has been found
+        if(n1[s] == 0){
+            match = true;
+            return;
+        }
+        //If the the next two possible states do no match there is a branch
+        //I have decided to use this that comparing The state character to "BR" because comparing int's is faster that comparing strings.
+        //And ultimatly this will lead to the same result.
+        if(n1[s] != n2[s]){
+            deque.put(n1[s]);
+            deque.put(n2[s]);
+            deque.putScan();
+            branch();
+        }else{
+            if(c[s].compareTo(currentLine.substring(pt, pt+1)) == 0){
+                deque.push(n1[s]);
+                pt++;
+            }
+        }     
+    }
+
+    /**
+     * Branches the state machine to one of the branches
+     */
+    private static void branch(){
+        //Pops the current state and the scan off
+        deque.pop();
+        int s1 = deque.pop();
+        int s2 = deque.pop();
+        //If the first state has been visited, try state 2 first.
+        if(v[s1]){
+            deque.push(s2);
+            if(match)
+                return;
+            deque.push(s1);
+        }else{ //Otherwise, try state 1 first
+            deque.push(s1);
+            if(match)
+                return;
+            deque.push(s2);
+        }   
     }
 
     /**
      * Initialises components for a new line
      */
     private static void newLine(){
-        resetV();
         mark = 0; //Sets mark to 0
-        resetPT();
         deque = new Deque();
+        //Initialises the deque the state 0 values
+        deque.putScan();
+        deque.push(0);
+        deque.put(n1[0]);
+        deque.put(n2[0]);
         match = false;
     }
 
