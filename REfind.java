@@ -46,7 +46,6 @@ public class REfind{
         Scanner sc = new Scanner(System.in);
         String[] line;
         ArrayList<String[]> in = new ArrayList<String[]>();
-        System.err.println("Reading STD in:");
 
         //Reads the piped input into an array list for parsing into the varios arrays
         try{
@@ -61,7 +60,9 @@ public class REfind{
             System.err.println("Something went wrong!\n");
             e.printStackTrace(System.err);
         }
+        sc.close();
 
+        //If there is at least some input
         if(in.size() > 0){
             //Initialises all the FSM arrays
             c = new String[in.size()];
@@ -83,7 +84,7 @@ public class REfind{
             System.err.println("Error. There was no piped input found to generate the FSM. \n"+usage);
         }
 
-        printArrays();
+        //printArrays();
     }
 
     /**
@@ -94,11 +95,9 @@ public class REfind{
         try{
             File file = new File(path);    
             Scanner sc = new Scanner(file);
-            System.out.println("Searching the text:");
             while(sc.hasNextLine()){
                 newLine();
                 currentLine = sc.nextLine();
-                System.err.println("\tMatching line : " + currentLine);
                 matchLine();               
             }
             sc.close();
@@ -117,8 +116,6 @@ public class REfind{
         if(mark >= currentLine.length())
             return;
 
-        System.err.println("\t\tStarting match from: m=" + mark +", c=" + currentLine.substring(mark, mark + 1));
-
         //Resets visited states, pointer and the Deque for a new pass
         Arrays.fill(v, false); //Sets all values in the visited array to false
         pt = mark; //Sets the pointer to mark
@@ -128,6 +125,8 @@ public class REfind{
         //A match has been found
         if(match){
             System.out.println(currentLine);
+            //ENABLE to see the matches highlighted
+            //highlightMatch();
             return;
         }
 
@@ -141,25 +140,18 @@ public class REfind{
      * returns if a match is found or no match is found
      */
     private static void tryMatch(){  
-        System.err.println("");
-        
         //Gets the front element from the deque
         int s = deque.pop();
-        System.err.print("\t\t\t s="+s +", pt="+pt);
-        deque.dumpstates();
 
         //The scan is reached. There are no more possible states
-        if(s == -1){
-            System.err.println("");
+        if(s == -1)
             return;
-        }
 
         //marks this state as
         visit(s);
             
         //A match has been found
         if(n1[s] == 0){
-            System.err.println(", match found!!");
             match = true;
             return;
         }
@@ -169,13 +161,11 @@ public class REfind{
 
             //If this branch is the first state then don't branch
             if(s == 0){
-                System.err.print(" is 'branch'");
                 deque.push(n1[s]);
                 tryMatch();
                 return;
             }
 
-            System.err.print(" Branching!");
             deque.push(n1[s]);
             deque.push(n2[s]);
             branch();
@@ -184,22 +174,16 @@ public class REfind{
         }
         
         //If the pointer has reached the end of the line then no match has been found
-        if(pt == currentLine.length()){
-            System.err.println("");
+        if(pt == currentLine.length())
             return;
-        }
-
-        System.err.print(", Matching: "+ c[s]+"="+currentLine.substring(pt, pt + 1));
 
         //If the element is a wildcard
         if(c[s].compareTo("WC") == 0){
-            System.err.print("WC = match!");
             deque.push(n1[s]);
             pt++;
         }else{
             //Otherwise a character match is attempted
             if(c[s].compareTo(currentLine.substring(pt, pt+1)) == 0){
-                System.err.print(", match!");
                 deque.push(n1[s]);
                 pt++;
             }
@@ -229,7 +213,7 @@ public class REfind{
                 return;
             deque.push(s2);
         }   
-        deque.putScan();
+        putScan();
         tryMatch();
     }
 
@@ -239,6 +223,10 @@ public class REfind{
      */
     private static void visit(int i){
         v[i] = true;
+    }
+
+    private static void putScan(){
+        deque.put(-1);
     }
 
     /**
@@ -256,13 +244,24 @@ public class REfind{
     private static void resetDeque(){
         deque = new Deque();
         //Initialises the deque the state 0 values
-        deque.putScan();
+        putScan();
         deque.push(0);
     }
 
     /***********************************
      *          DEBUG OUTPUTS          *
      ***********************************/
+
+    private static void highlightMatch(){
+        System.out.print(currentLine.substring(0,mark));
+        System.out.print("\033[0;31m" + currentLine.substring(mark, pt) + "\033[0m");
+        if(pt < currentLine.length())
+            System.out.println(currentLine.substring(pt));
+    }
+
+     /**
+      * Prints all the input arrays
+      */
     private static void printArrays(){
         printSTRArray(c);
         printIntrray(n1);
