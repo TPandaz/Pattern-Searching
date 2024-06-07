@@ -116,13 +116,13 @@ public class Deque{
     /**
      * Removes the item at the front of the queue
      */
-    public void pop(){
-        if(head == null)
-            return;
+    public int pop() throws NullPointerException{
+        int i = head.getState();
         head = head.getBack();
         if(head == null)
             tail = null;
         length--;
+        return i;
     }
 
     /**
