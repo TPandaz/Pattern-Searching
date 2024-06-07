@@ -8,7 +8,7 @@ import java.util.Scanner;
 /**
  * @author Dolf ten Have
  * SID: 1617266, 
- * Date:
+ * Date: 07/06/2024
  * 
  */
 public class REfind{
@@ -116,16 +116,21 @@ public class REfind{
         //The end of the line has been reached
         if(mark >= currentLine.length())
             return;
+
         System.err.println("\t\tStarting match from: m=" + mark +", c=" + currentLine.substring(mark, mark + 1));
-        resetV();
-        resetPT();
+
+        //Resets visited states, pointer and the Deque for a new pass
+        Arrays.fill(v, false); //Sets all values in the visited array to false
+        pt = mark; //Sets the pointer to mark
         resetDeque();
         tryMatch();
+
         //A match has been found
         if(match){
             System.out.println(currentLine);
             return;
         }
+
         //No match found
         mark++;
         matchLine();
@@ -136,43 +141,65 @@ public class REfind{
      * returns if a match is found or no match is found
      */
     private static void tryMatch(){  
-        System.err.println("");      
+        System.err.println("");
+        
+        //Gets the front element from the deque
         int s = deque.pop();
-            System.err.print("\t\t\t s="+s +", pt="+pt);
-            deque.dumpstates();
+        System.err.print("\t\t\t s="+s +", pt="+pt);
+        deque.dumpstates();
+
         //The scan is reached. There are no more possible states
         if(s == -1){
             System.err.println("");
             return;
         }
-        System.err.print(", Matching: "+ c[s]+"="+currentLine.substring(pt, pt + 1));
-        //If the pointer has reached the end of the line
-        if(pt == currentLine.length())
-            return;
+
         //marks this state as
         visit(s);
-
+            
         //A match has been found
         if(n1[s] == 0){
             System.err.println(", match found!!");
             match = true;
             return;
         }
+
         //If there is a branch
         if(c[s].compareTo("BR") == 0){
+
+            //If this branch is the first state then don't branch
+            if(s == 0){
+                System.err.print(" is 'branch'");
+                deque.push(n1[s]);
+                tryMatch();
+                return;
+            }
+
             System.err.print(" Branching!");
             deque.push(n1[s]);
             deque.push(n2[s]);
             branch();
             return;
             //If the character is a wild card
-        }else if(c[s].compareTo("WC") == 0){
+        }
+        
+        //If the pointer has reached the end of the line then no match has been found
+        if(pt == currentLine.length()){
+            System.err.println("");
+            return;
+        }
+
+        System.err.print(", Matching: "+ c[s]+"="+currentLine.substring(pt, pt + 1));
+
+        //If the element is a wildcard
+        if(c[s].compareTo("WC") == 0){
             System.err.print("WC = match!");
             deque.push(n1[s]);
             pt++;
         }else{
+            //Otherwise a character match is attempted
             if(c[s].compareTo(currentLine.substring(pt, pt+1)) == 0){
-                System.err.print("match!");
+                System.err.print(", match!");
                 deque.push(n1[s]);
                 pt++;
             }
@@ -181,7 +208,8 @@ public class REfind{
     }
 
     /**
-     * Branches the state machine to one of the branches
+     * Branches the state machine
+     * Attempts the first branch not visited first followed by the other branch if no match is found
      */
     private static void branch(){
         //Pops the current state and the scan off
@@ -206,6 +234,14 @@ public class REfind{
     }
 
     /**
+     * Sets the vistited state at i to true
+     * @param i The index of the state
+     */
+    private static void visit(int i){
+        v[i] = true;
+    }
+
+    /**
      * Initialises components for a new line
      */
     private static void newLine(){
@@ -223,30 +259,6 @@ public class REfind{
         deque.putScan();
         deque.push(0);
     }
-
-    /**
-     * Sets the vistited state at i to true
-     * @param i The index of the state
-     */
-    private static void visit(int i){
-        v[i] = true;
-    }
-
-    /**
-     * Resets the visited array
-     */
-    private static void resetV(){
-        Arrays.fill(v, false); //Sets all values in the visited array to false
-    }
-
-    /**
-     * Resets the pointer to match mark
-     */
-    private static void resetPT(){
-        pt = mark; //Sets the pointer to mark
-    }
-
-
 
     /***********************************
      *          DEBUG OUTPUTS          *
